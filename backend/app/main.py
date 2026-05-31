@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from .api.health import router as health_router
 from .api.uploads import router as upload_router
+from .api.ingestion import router as ingestion_router
+from .api.retrieval import router as retrieval_router
 
 
 app = FastAPI(
@@ -11,6 +13,8 @@ app = FastAPI(
 
 app.include_router(health_router, prefix="/api")
 app.include_router(upload_router, prefix="/api")
+app.include_router(ingestion_router, prefix="/api")
+app.include_router(retrieval_router, prefix="/api")
 
 @app.get("/")
 def read_root():
