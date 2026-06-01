@@ -18,3 +18,5 @@ backend/uploads/
 
 # Editor folders
 .vscode/
+.env
+.env.example

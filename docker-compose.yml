@@ -1,0 +1,110 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: mediscan-postgres
+    environment:
+      POSTGRES_DB: mediscan_db
+      POSTGRES_USER: mediscan_user
+      POSTGRES_PASSWORD: mediscan_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - mediscan-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mediscan_user -d mediscan_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Qdrant Vector Database
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: mediscan-qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - mediscan-network
+    environment:
+      QDRANT_TELEMETRY_DISABLED: "true"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # FastAPI Backend
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: mediscan-backend
+    environment:
+      DATABASE_URL: postgresql://mediscan_user:mediscan_password@postgres:5432/mediscan_db
+      QDRANT_URL: http://qdrant:6333
+      OLLAMA_URL: http://ollama:11434
+      PYTHONUNBUFFERED: 1
+      JWT_SECRET_KEY: your-secret-key-change-in-production
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app/backend
+      - ./uploads:/app/uploads
+    networks:
+      - mediscan-network
+    command: uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Ollama (LLM Runtime)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: mediscan-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - mediscan-network
+    # Note: You'll need to pull model manually
+    # docker exec mediscan-ollama ollama pull llama2:7b
+    # or after starting, run:
+    # ollama pull llama2:7b
+
+  # Redis (for caching and sessions - optional but recommended)
+  redis:
+    image: redis:7-alpine
+    container_name: mediscan-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - mediscan-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  qdrant_data:
+  ollama_data:
+  redis_data:
+
+networks:
+  mediscan-network:
+    driver: bridge

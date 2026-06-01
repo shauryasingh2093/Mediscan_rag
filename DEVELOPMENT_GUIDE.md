@@ -24,6 +24,37 @@ Most medical AI projects do ONE thing:
 
 ---
 
+## PHASE 0: Data Strategy & Setup
+**What we build:**
+- Dataset management system
+- MedMNIST (lightweight images) - 1,000 samples
+- PubMed abstracts (medical literature) - 500 papers
+- Data versioning and cataloging
+
+**Why it matters:** Don't start with massive datasets like full MIMIC or NIH Chest X-ray. You'll spend weeks downloading/preprocessing. Better to use smaller, curated datasets and iterate quickly.
+
+**Production-Level Strategy:**
+- ✅ **Phase 1 MVP**: MedMNIST + PubMed (5-10 min setup)
+- ✅ **Phase 2 Production**: MIMIC-CXR subset (1,000-5,000 studies) with PhysioNet
+- ✅ **Phase 3 Advanced**: Additional PubMed + WHO guidelines
+
+**Technologies:** DatasetManager, MedMNISTLoader, PubMedCrawler, JSONL format
+
+**Get Started:**
+```bash
+# Show full setup plan
+python -m backend.scripts.setup_datasets --phase 0
+
+# Setup Phase 1 MVP (MedMNIST + PubMed)
+python -m backend.scripts.setup_datasets --phase 1
+
+# Individual dataset setup
+python -m backend.scripts.download_medmnist --dataset chestmnist --subset 1000
+python -m backend.scripts.fetch_pubmed --num-papers 500
+```
+
+---
+
 ## PHASE-BY-PHASE BREAKDOWN
 
 ### PHASE 1: Foundation & Basic RAG
